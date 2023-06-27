@@ -8,6 +8,8 @@ The PIC in simulated in Lumerical INTERCONNECT.
 
 
 ## Device Schematic
+![alt text](full_schematic.png)<br>
+
 ![alt text](schematic.png)
 
 
