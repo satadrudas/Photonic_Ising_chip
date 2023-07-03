@@ -5,8 +5,8 @@
 A time-multiplexed Coherent Ising Machine chip is designed based of Silicon Photonics. Basically here I implement the table-top Ising machine design given in reference [1] into a Photonic Integrated Circuit(PIC). Though with some changes. The nonlinear function used for bifurcation in reference [1] is cosine squared since the spin information is encoded in the intensity of light. Here we use just cosine function for bifurcation and encode the spin information in the amplitude of the light. For the matrix multiplication part, and method of photonic matrix multiplication using homodyne-detector given in reference [2] and [4] is used since this system is a time multiplex system.<br/><br/>
 
 There are 2 wars to encode the spins.
-  - Using time-multiplexing as done in referend [2]
-  - Using wavelength-multiplexing as done in reference [3]
+  - Using time-multiplexing as done in referend [2] <br/> ![alt text](ref_schematic1.png)<br>
+  - Using wavelength-multiplexing as done in reference [3] <br/> ![alt text](ref_schematic2.png)<br>
 
 The PIC in simulated in Lumerical INTERCONNECT.
 
