@@ -21,7 +21,8 @@ The PIC in simulated in Lumerical INTERCONNECT.
 
 There are 2 wars to encode the spins.
   - Using time-multiplexing as done in referend [2] and [4] <br/> ![alt text](ref_schematic1.png) ![alt text](ref_schematic3.png)<br/><br/>
-  - Using wavelength-multiplexing as done in reference [3] <br/> ![alt text](ref_schematic2.png)<br>
+  - Using wavelength-multiplexing as done in reference [3] <br/> ![alt text](ref_schematic2.png)<br/>
+  - Wavelength multiplexing variant as done in reference [5] <br/> ![alt_text](jiaqigu.png)<br/>
 
 
 
@@ -30,4 +31,5 @@ There are 2 wars to encode the spins.
 1. [A poor man’s coherent Ising machine based on opto-electronic feedback systems for solving optimization problems](https://www.nature.com/articles/s41467-019-11484-3)<br />
 1. [Large-Scale Optical Neural Networks Based on Photoelectric Multiplication](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.9.021032)<br />
 1. [Alexander Sludds et al. ,Delocalized photonic deep learning on the internet’s edge.Science378,270-276(2022).DOI:10.1126/science.abq8271](https://www.science.org/doi/10.1126/science.abq8271)
-1. [L. De Marinis et al., "A Codesigned Integrated Photonic Electronic Neuron," in IEEE Journal of Quantum Electronics, vol. 58, no. 5, pp. 1-10, Oct. 2022, Art no. 8100210, doi: 10.1109/JQE.2022.3177793.](https://ieeexplore.ieee.org/document/9781309)
+1. [L. De Marinis et al., "A Codesigned Integrated Photonic Electronic Neuron," in IEEE Journal of Quantum Electronics, vol. 58, no. 5, pp. 1-10, Oct. 2022, Art no. 8100210, doi: 10.1109/JQE.2022.3177793.](https://ieeexplore.ieee.org/document/9781309)<br/>
+1. [DOTA: A Dynamically-Operated Photonic Tensor Core for Energy-Efficient Transformer Accelerator](https://arxiv.org/abs/2305.19533)<br/>
