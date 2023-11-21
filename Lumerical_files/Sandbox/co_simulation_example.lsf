@@ -1,0 +1,155 @@
+#####################################################
+# Define user parameters
+#
+# the target speed: high, low or variable
+target_speed = "variable"; # "high", "low", "variable"
+time_window = 5e-9;
+Nsamples = 2000;
+# set the attenuation
+attenuation = 10; #dB
+# monitor signal at which to flip from low speed operation to high speed
+conversion_threshold = 0.0005; 
+seed = 123456; # seed for generating a pseudo-random bit sequence
+# end user parameters
+#####################################################
+
+
+#####################################################
+# Initialization
+
+# turn off history and redrawing
+redrawoff;
+historyoff;
+
+# time vectors
+t = linspace(0,time_window,Nsamples+1);
+t = t(1:end-1);
+dt = t(2)-t(1);
+
+# reserve memory for results
+signal = matrix(length(t));
+monitor = matrix(length(t));
+output = matrix(length(t));
+speed = matrix(length(t));
+
+# restore design mode in case we are in analysis mode
+switchtodesign;
+
+# Set up simulation to match time window and number of samples
+# The time windows should match because the INTERCONNECT simulation
+# will stop once the simulation time exceeds the time window.
+# The number of samples defines the INTERCONNECT time step, dt, by dt = time_window/(Nsamples+1).
+# The time steps do NOT have to match, although in this example they do. Indeed,
+# the time step of an external simulator can be variable
+setnamed("::Root Element","time window",time_window);
+setnamed("::Root Element","number of samples",Nsamples);
+
+# set number of threads to 2. More can run faster but testing is required and is machine dependent
+setnamed("::Root Element","number of threads",2);
+
+# set the desired attenuation
+setnamed("ATT_1","attenuation",attenuation);
+
+# intialize the simulation
+runinitialize;
+
+# define the low and high speed bit rates at 10 GB/s and 25 GB/s
+bit_rate = [10e9,25e9];
+
+# reset the random number seed
+randreset(seed);
+
+# intiaal values of t0 and bit_length to ensure we recalculate correct values in first step
+t0 = 0;
+bit_length = 0;
+
+# initialize struct used for passing co-sim data
+v = struct;
+
+# initialize value of monitor minimum value over bit length
+monitor_min = 0;
+
+# End initialization
+#####################################################
+
+
+#####################################################
+# simulation loop
+for(i=1:length(t)) {
+    if(t(i)-t0 >= bit_length) { # bit has just ended, move on to next bit
+        bit = rand > 0.5; # set bit
+        if(target_speed == "high") {
+            bit_rate_current = bit_rate(2);
+        } else {
+            if(target_speed == "low") {
+                bit_rate_current = bit_rate(1);
+            } else {
+                if(target_speed == "variable") {
+                    if(monitor_min > conversion_threshold) {
+                        bit_rate_current = bit_rate(2);
+                    } else {
+                        bit_rate_current = bit_rate(1);
+                    }
+                } else {
+                    ?"Error, target_speed must be 'high', 'low' or 'variable'";
+                    break;
+                }
+            }
+        }
+        bit_length = 1/bit_rate_current;
+        t0 = t0 + bit_length;
+        bit_rate_current*1e-9;
+        monitor_min = 0; # reset monitor min for next bit
+    }
+    
+    speed(i) = bit_rate_current;
+    
+    # set signal
+    signal(i) = 0.5*(1+bit);
+    
+    # push signal into INTERCONNECT simulation
+    v.index = 1;
+    v.time =  t(i);
+    v.value = signal(i);
+    setvalue("COSIM_1","port",v);
+    
+    # run INTERCONNECT until maximum time pushed
+    runstep;
+    
+    # read signals from INTERCONNECT simulation at current time
+    v.index = 2;
+    monitor(i) = getvalue("COSIM_1","port",v);
+    v.index = 3;
+    output(i) = getvalue("COSIM_1","port",v);
+    # update monitor min
+    if(monitor(i) > monitor_min) { 
+        monitor_min = monitor(i);
+    }
+}
+# end simulation loop
+#####################################################
+
+# run finalize of INTERCONNECT
+runfinalize;
+
+# plot recorded data
+plot(t*1e9,signal,"time (ns)","signal");
+legend("speed = " + target_speed);
+setplot("y1 min",-0.1);
+setplot("y1 max",1.1);
+plot(t*1e9,monitor,"time (ns)","monitor signal");
+legend("speed = " + target_speed);
+plot(t*1e9,output,"time (ns)","PD output");
+legend("speed = " + target_speed);
+plot(t*1e9,speed*1e-9,"time (ns)","speed (GB/s)");
+legend("speed");
+
+BER_high = getresult("EYE_1","measurement/BER");
+BER_low = getresult("EYE_2","measurement/BER");
+?"Operating at speed: " + target_speed;
+?"Estimated high speed BER: " + num2str(BER_high);
+?"Estimated low speed BER: " + num2str(BER_low);
+
+
+
+
