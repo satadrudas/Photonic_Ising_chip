@@ -62,8 +62,8 @@ def J_hyperparameters(J_mat,alpha, beta):
     
 ###################################################################################
 
-N_spins = 10
-alpha = 1.1
+N_spins = 20
+alpha = 1.2
 beta=0.0
 
 v_pi= 4
@@ -71,7 +71,7 @@ mzm_freq=1e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
-N_iterations=10
+N_iterations=1
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
 sig = 0.05
@@ -301,7 +301,7 @@ print("Error in calculation :"+str(np.absolute(result-dot_product))+"\n")
 p_num = count_positive_values(dot_product)
 n_num = len(dot_product)-p_num
 
-print("Spin positive :"+str(p_num/len(dot_product * 100))+" Spin negative :"+str(n_num/len(dot_product * 100))+"\n")
+print("Spin positive :"+str(p_num/len(dot_product))+" Spin negative :"+str(n_num/len(dot_product) )+"\n")
 
 
 #tol=[1e-3]
