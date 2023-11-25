@@ -62,7 +62,7 @@ def J_hyperparameters(J_mat,alpha, beta):
     
 ###################################################################################
 
-N_spins = 30
+N_spins = 10
 alpha = 1.5
 beta=0.0
 
@@ -71,18 +71,20 @@ mzm_freq=1e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
-N_iterations=30
+N_iterations=10
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
 sig = 0.1
 
 integrator_data=np.zeros(N_spins)
 dot_product=np.zeros(N_spins)
+
 spin_evolution = np.zeros(shape=(N_iterations+1,N_spins))
+noise = np.random.normal(0,sig,(N_iterations+1,N_spins)) 
     
 
 
-lumapi.evalScript(h,''' load("3_multiply_accumulate.icp"); ''');
+lumapi.evalScript(h,''' load("ising.icp"); ''');
 
 lumapi.putDouble(h,"time_window",time_window);
 lumapi.putDouble(h,"N_samples",N_samples);
@@ -166,7 +168,7 @@ spins = np.zeros(N_spins)
 
 sig = 0.05
 
-spins = spins-np.pi/2 + np.random.normal(0,sig,N_spins) 
+spins = spins-np.pi/2 + noise[0]
 
 result=np.dot(J_matrix, np.cos(spins))
 
@@ -275,9 +277,10 @@ for t in time:
                 iteration_counter = iteration_counter + 1  
                 
                 print(np.array(dot_product))
-                spin_evolution[iteration_counter]=np.array(dot_product)
+                #spin_evolution[iteration_counter]=np.array(dot_product)
                 
-                spins = dot_product -np.pi/2 + np.random.normal(0,sig,N_spins) 
+                spins = dot_product -np.pi/2 + noise[iteration_counter]
+                spin_evolution[iteration_counter]=np.cos(np.array(spins))
 
                 spins = vvm_preprocess(spins)# actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
                 mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
@@ -299,6 +302,9 @@ for t in time:
             
             
 ###############################################################
+
+final_spins_value = spin_evolution[-1]
+
 print("Dot product (actual): "+str(result)+"\n") # comment it when not using      
 print("Integrated values (Simulation): "+str(integrator_data)+"\n")
 print("Dot product values (Simulation): "+str(dot_product)+"\n")
@@ -332,15 +338,13 @@ lumapi.putMatrix(h,"pd_output",pd_output)
 lumapi.putMatrix(h,"integrator_output",integrator_output)
 lumapi.putMatrix(h,"dot_product_data",dot_product_data)
 lumapi.putMatrix(h,"dot_product",dot_product)##
+lumapi.putMatrix(h,"final_spins_value",final_spins_value)##
 
-test=np.random.uniform(-1,1,(N_spins, 17))
-lumapi.putMatrix(h,"test",test)##
 
-spin_evolution=np.array(spin_evolution)/alpha
+spin_evolution=np.array(spin_evolution)
 print(spin_evolution)#,spin_evolution.shape )
 lumapi.putMatrix(h,"spin_evolution",spin_evolution)##
-lumapi.putDouble(h,"N_spins",N_spins)
-lumapi.putDouble(h,"N_iterations",N_iterations)
+
 
 
 lumapi.evalScript(h,'''
@@ -366,16 +370,16 @@ legend("integrator_output");
 plot(t*1e9,dot_product_data,"time (ns)","dot_product_data");
 legend("dot_product_data");
 
-x=linspace(1,length(dot_product),length(dot_product));
-plot(x,dot_product,"Spins", "Spin value", "Final Spin value", "plot type=bar");
+#x=linspace(1,length(dot_product),length(dot_product));
+#plot(x,dot_product,"Spins", "Spin value", "Final Spin value", "plot type=bar");
+#legend("Final spin values");
+
+x=linspace(1,length(final_spins_value),length(final_spins_value));
+plot(x,final_spins_value,"Spins", "Spin value", "Final Spin value", "plot type=bar");
 legend("Final spin values");
 
-#x=linspace(1,5,5);
-#plot(x,test,"Spins", "Spin value", "Final Spin value", "plot type=line");
-#legend("Test");
-
 x=linspace(0,size(spin_evolution,1)-1,size(spin_evolution,1));
-plot(x,spin_evolution,"Iteration", "Spin value", " Spin evolution (uncloupled)", "plot type=line");
+plot(x,spin_evolution,"Iteration", "Spin value", " Spin evolution (uncoupled)", "plot type=line");
 #legend("Test");
 
 ''')
