@@ -3,6 +3,8 @@ I used Lumerical INTERCONNECT to do some preliminary simulations.
 The circuit is driven by a Lumerical INTERCONNECT python co-simulation module.
 
 ![alt text](Ising.png)
+
+The cosine operation was done in python for visualization purpose, since the value recorded by the co-sim module id the dotproduct and not the spin value. 
 ![alt text](uncoupled_spins_evolution.png)
 ![alt text](final_spins.png)
 ![alt text](dot_product.png)
