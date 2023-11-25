@@ -3,6 +3,9 @@ I used Lumerical INTERCONNECT to do some preliminary simulations.
 The circuit is driven by a Lumerical INTERCONNECT python co-simulation module.
 
 ![alt text](Ising.png)
+![alt text](unclupled_spins_evolution.png)
+![alt text](final_spins.png)
+![alt text](dot_product.png)
 
 NOTE:
 In the code, the following path seems to work:
