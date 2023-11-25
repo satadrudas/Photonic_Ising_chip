@@ -62,8 +62,8 @@ def J_hyperparameters(J_mat,alpha, beta):
     
 ###################################################################################
 
-N_spins = 20
-alpha = 1.2
+N_spins = 30
+alpha = 1.5
 beta=0.0
 
 v_pi= 4
@@ -71,13 +71,14 @@ mzm_freq=1e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
-N_iterations=1
+N_iterations=30
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
-sig = 0.05
+sig = 0.1
 
 integrator_data=np.zeros(N_spins)
 dot_product=np.zeros(N_spins)
+spin_evolution = np.zeros(shape=(N_iterations+1,N_spins))
     
 
 
@@ -155,13 +156,14 @@ counter=0;
 input_index=0;# 0 to len(input_data1)+1, the +1 is for the reset step
 reset_flag=0;
 integrator_index=0;
+iteration_counter = 0
 
 
 J = np.diag(np.ones(N_spins),0)#np.random.uniform(-1,1,(N_spins, N_spins))
 J_matrix = J_hyperparameters(J,alpha, beta)
 
-
 spins = np.zeros(N_spins)
+
 sig = 0.05
 
 spins = spins-np.pi/2 + np.random.normal(0,sig,N_spins) 
@@ -178,7 +180,6 @@ spins = vvm_preprocess(spins, 0.0) # actually it doenst matter what vlue you put
    
 mzm1_input1,mzm1_input2 = mzm_voltages(input_data1, 0)
 mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
-
 
 
 
@@ -269,9 +270,15 @@ for t in time:
             integrator_index = integrator_index+1
           
             if integrator_index==len(integrator_data): # for the next mvm
-                integrator_index=0     
+                
+                integrator_index=0   
+                iteration_counter = iteration_counter + 1  
+                
+                print(np.array(dot_product))
+                spin_evolution[iteration_counter]=np.array(dot_product)
                 
                 spins = dot_product -np.pi/2 + np.random.normal(0,sig,N_spins) 
+
                 spins = vvm_preprocess(spins)# actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
                 mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
 
@@ -295,7 +302,7 @@ for t in time:
 print("Dot product (actual): "+str(result)+"\n") # comment it when not using      
 print("Integrated values (Simulation): "+str(integrator_data)+"\n")
 print("Dot product values (Simulation): "+str(dot_product)+"\n")
-print("Error in calculation :"+str(np.absolute(result-dot_product))+"\n")
+#print("Error in calculation :"+str(np.absolute(result-dot_product))+"\n")
 
 
 p_num = count_positive_values(dot_product)
@@ -324,6 +331,17 @@ lumapi.putMatrix(h,"mzm2_v2",mzm2_v2)
 lumapi.putMatrix(h,"pd_output",pd_output)
 lumapi.putMatrix(h,"integrator_output",integrator_output)
 lumapi.putMatrix(h,"dot_product_data",dot_product_data)
+lumapi.putMatrix(h,"dot_product",dot_product)##
+
+test=np.random.uniform(-1,1,(N_spins, 17))
+lumapi.putMatrix(h,"test",test)##
+
+spin_evolution=np.array(spin_evolution)/alpha
+print(spin_evolution)#,spin_evolution.shape )
+lumapi.putMatrix(h,"spin_evolution",spin_evolution)##
+lumapi.putDouble(h,"N_spins",N_spins)
+lumapi.putDouble(h,"N_iterations",N_iterations)
+
 
 lumapi.evalScript(h,'''
 # plot recorded data
@@ -347,6 +365,18 @@ legend("integrator_output");
 
 plot(t*1e9,dot_product_data,"time (ns)","dot_product_data");
 legend("dot_product_data");
+
+x=linspace(1,length(dot_product),length(dot_product));
+plot(x,dot_product,"Spins", "Spin value", "Final Spin value", "plot type=bar");
+legend("Final spin values");
+
+#x=linspace(1,5,5);
+#plot(x,test,"Spins", "Spin value", "Final Spin value", "plot type=line");
+#legend("Test");
+
+x=linspace(0,size(spin_evolution,1)-1,size(spin_evolution,1));
+plot(x,spin_evolution,"Iteration", "Spin value", " Spin evolution (uncloupled)", "plot type=line");
+#legend("Test");
 
 ''')
 
