@@ -14,7 +14,45 @@ sys.path.append(os.path.dirname(__file__)) #Current directory
 import lumapi
 
 h = lumapi.open("interconnect")
+
+N_spins = 16
+alpha = 0.4
+beta=0.5
+
+v_pi= 4
+mzm_freq=1e9
+time_per_input=1/mzm_freq
+samples_per_input = 3
+time_per_sample=time_per_input / samples_per_input
+N_iterations=30
+N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
+time_window = N_samples * time_per_sample
+sig = 0.1
+
+integrator_data = np.zeros(N_spins)
+dot_product = np.zeros(N_spins)
+hamiltonian_evolution = np.zeros(N_iterations+1)
+
+spin_evolution = np.zeros(shape=(N_iterations+1,N_spins))
+noise = np.random.normal(0,sig,(N_iterations+1,N_spins)) 
+
 ###################################################################################
+def square_lattice_coupling_matrix_generator(n):
+    j=np.zeros((n,n))
+    sq_len = int(np.sqrt(n))
+
+    for i in range(0,sq_len):
+        for k in range(i*sq_len, (i+1)*sq_len-1):
+            j[k, k+1]=1
+            j[k+1,k]=1 
+
+    for i in range(0,sq_len-1):
+        for k in range(i*sq_len, (i+1)*sq_len):
+            j[k, k+sq_len]=1
+            j[k+sq_len,k]=1
+
+    return j
+
 def normalize(input):
     normalizing_factor = np.max(np.abs(input))
     normalized_input = input/normalizing_factor
@@ -58,29 +96,30 @@ def J_hyperparameters(J_mat,alpha, beta):
     np.fill_diagonal(J_mat,alpha)
     return J_mat
 
+def cut_value(final_spins, J_mat):
+    
+    value = 0
+    final_spins = np.sign(final_spins)
+    for i in range(0,N_spins):
+        for j in range(0, N_spins):
+            if final_spins[i]*final_spins[j]<0:
+                value = value + J_mat[i,j]
+                    
+    return value/2
+    
 
+def hamiltonian(spin_value,J_mat):
+    H = 0
+    spin_value = np.sign(spin_value)
+    J_mat=-J_mat ####!!!!!!!!!!! REMEMBER ANTIFERRO, REMOVE THIS WHEN YOU HAVE CORRECTED THE J BEFORE ITSELF
+    for row,i in enumerate(spin_value):
+        for col,j in enumerate(spin_value):
+            H = H -J_mat[row][col]*i*j
+    return H/2 # refer the poor man paper
     
 ###################################################################################
 
-N_spins = 10
-alpha = 1.5
-beta=0.0
 
-v_pi= 4
-mzm_freq=1e9
-time_per_input=1/mzm_freq
-samples_per_input = 3
-time_per_sample=time_per_input / samples_per_input
-N_iterations=10
-N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
-time_window = N_samples * time_per_sample
-sig = 0.1
-
-integrator_data=np.zeros(N_spins)
-dot_product=np.zeros(N_spins)
-
-spin_evolution = np.zeros(shape=(N_iterations+1,N_spins))
-noise = np.random.normal(0,sig,(N_iterations+1,N_spins)) 
     
 
 
@@ -161,7 +200,26 @@ integrator_index=0;
 iteration_counter = 0
 
 
-J = np.diag(np.ones(N_spins),0)#np.random.uniform(-1,1,(N_spins, N_spins))
+#J = np.random.uniform(0,1,(N_spins, N_spins))
+#J=(J+np.transpose(J))/2
+#J = np.diag(np.ones(N_spins),0)
+
+#########################################
+#J_file="/home/satadrudas/Photonics/Photonic_Ising_chip/Lumerical_files/Sandbox/Maxcut_instances/s_100.txt"
+#f = open(J_file,"r")
+#N_spins, number_of_edges = [int(i) for i in f.readline().split()]
+#J = np.zeros([N_spins,N_spins])
+#lines = f.readlines()
+#for line in lines:
+#    l = line.split()
+#    r,c,w = int(l[0])-1, int(l[1])-1, float(l[2])
+#    J[r][c] = w
+#    J[c][r] = w        
+#f.close()
+#J=np.array(J)
+
+#########################################
+J = square_lattice_coupling_matrix_generator(N_spins)
 J_matrix = J_hyperparameters(J,alpha, beta)
 
 spins = np.zeros(N_spins)
@@ -276,11 +334,14 @@ for t in time:
                 integrator_index=0   
                 iteration_counter = iteration_counter + 1  
                 
-                print(np.array(dot_product))
+                #print(np.array(dot_product))
                 #spin_evolution[iteration_counter]=np.array(dot_product)
                 
                 spins = dot_product -np.pi/2 + noise[iteration_counter]
                 spin_evolution[iteration_counter]=np.cos(np.array(spins))
+                print(spin_evolution[iteration_counter])
+                hamiltonian_evolution[iteration_counter] = hamiltonian(spin_evolution[iteration_counter], J)
+                print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")
 
                 spins = vvm_preprocess(spins)# actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
                 mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
@@ -308,6 +369,9 @@ final_spins_value = spin_evolution[-1]
 print("Dot product (actual): "+str(result)+"\n") # comment it when not using      
 print("Integrated values (Simulation): "+str(integrator_data)+"\n")
 print("Dot product values (Simulation): "+str(dot_product)+"\n")
+print("Hamiltonian Evolution: "+str(hamiltonian_evolution)+"\n")
+print("Cut value (alpha = "+str(alpha)+", beta = "+str(beta)+") : "+str(cut_value(spin_evolution[-1], J)))
+
 #print("Error in calculation :"+str(np.absolute(result-dot_product))+"\n")
 
 
@@ -339,6 +403,7 @@ lumapi.putMatrix(h,"integrator_output",integrator_output)
 lumapi.putMatrix(h,"dot_product_data",dot_product_data)
 lumapi.putMatrix(h,"dot_product",dot_product)##
 lumapi.putMatrix(h,"final_spins_value",final_spins_value)##
+lumapi.putMatrix(h,"hamiltonian_evolution",hamiltonian_evolution)##
 
 
 spin_evolution=np.array(spin_evolution)
@@ -379,8 +444,13 @@ plot(x,final_spins_value,"Spins", "Spin value", "Final Spin value", "plot type=b
 legend("Final spin values");
 
 x=linspace(0,size(spin_evolution,1)-1,size(spin_evolution,1));
-plot(x,spin_evolution,"Iteration", "Spin value", " Spin evolution (uncoupled)", "plot type=line");
-#legend("Test");
+plot(x,spin_evolution,"Iterations", "Spin value", " Spin evolution", "plot type=line");
+legend("Spins");
+#change the title to uncoupled spins when beta=0.0
+
+x=linspace(0,length(hamiltonian_evolution)-1,length(hamiltonian_evolution));
+plot(x,hamiltonian_evolution,"Iterations", "Ising Energy", "Ising Energy", "plot type=line");
+legend("Ising Energy");
 
 ''')
 
