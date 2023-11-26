@@ -10,7 +10,7 @@ The following results for uncoupled spins were simulated with alpha = 1.5. <br/>
 ![alt text](final_spins.png)
 ![alt text](dot_product.png)
 <br/><br/>
-The following the simulation result of a square lattice of 16 spins. TODO: Ceck the hamiltonian function once again and the cut values<br/>
+The following the simulation result (simulated on Lumerical INTERCONNECT) of a square lattice of 16 spins. TODO: Ceck the hamiltonian function once again and the cut values<br/>
 ![alt text](spin_evolution_4spins.png)
 ![alt text](final_spin_values_4spins.png)
 ![alt text](ising_energy_4spins.png)
