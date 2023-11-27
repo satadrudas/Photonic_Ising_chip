@@ -19,13 +19,13 @@ N_spins = 16
 alpha = 0.4
 beta=0.5
 
-norm_limiter = 0.7 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
+norm_limiter = 1.0 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
 v_pi= 4
 mzm_freq=1e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
-N_iterations=30
+N_iterations=20
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
 sig = 0.1
@@ -338,16 +338,16 @@ for t in time:
                 
                 #print(np.array(dot_product))
                 #spin_evolution[iteration_counter]=np.array(dot_product)
-                
-  
+                  
                 spins = dot_product -np.pi/2 + noise[iteration_counter]
-                #print('spins'+str(spins)+'\n')
+                print('spins'+str(spins)+'\n')
                 #print('dot_product'+str(dot_product)+'\n')
-
                 
                 spins[spins>-(np.pi/2)+np.arcsin(norm_limiter)]=-(np.pi/2)+np.arcsin(norm_limiter)
                 spins[spins<-(np.pi/2)-np.arcsin(norm_limiter)]=-(np.pi/2)-np.arcsin(norm_limiter)
-
+                # the reason final bundle is much thinner here because of the set value, and in the notmal execution even when there is a overshoot, the valuestays <1 and noisy
+                # basically in normal execution when limiter=1, the spins which are less than the bound [-1,1], are OVERSHOOTS.
+                # point is, the the thinner bundle is as expected and nothing out of ordinary
                 spin_evolution[iteration_counter]=np.cos(np.array(spins))
                 print(spin_evolution[iteration_counter])
                 hamiltonian_evolution[iteration_counter] = hamiltonian(spin_evolution[iteration_counter], J)
