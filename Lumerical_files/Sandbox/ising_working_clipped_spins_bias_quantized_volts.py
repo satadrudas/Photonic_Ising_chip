@@ -19,9 +19,15 @@ N_spins = 16
 alpha = 0.4
 beta=0.5
 
+dac_bit_precision=8
+adc_bit_precision=16
+adc_ref_volt=1 # determined by have a max value of otleast 0.001*(time_per_input/c_integrator)*N_spins
 c_integrator=100e-12 # Farad
+norm_limiter = 0.5 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
+
+
 v_pi= 4
-mzm_freq=1e9
+mzm_freq=10e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
@@ -54,8 +60,8 @@ def square_lattice_coupling_matrix_generator(n):
 
     return j
 
-def normalize(input):
-    normalizing_factor = np.max(np.abs(input))
+def normalize(input, limiter=norm_limiter):
+    normalizing_factor = np.max(np.abs(input))/limiter
     normalized_input = input/normalizing_factor
     return normalized_input, normalizing_factor
     
@@ -67,23 +73,51 @@ def vvm_preprocess(input, insert_value=0.0):
     input=np.insert(input, len(input), insert_value)    
     return input
     
-def mzm_voltages(input, theta_flag=0):
+def mzm_voltages(input, theta_flag=0, quantization=1, dac_precision=dac_bit_precision):
     '''
     Returns the neccessary voltages of a
     dual drive MZM for the given input
     
     If theta_flag is set, then the theta will be set 
-    to the input and no arccos will be taken
+    to the input and no arcsin will be taken
+    
+    quantization flag is set for dac precision
     '''
+    
     if theta_flag:
         theta=input
     else:
-        theta=np.arccos(input)
+        theta=np.arcsin(input)
         
     mzm_v1=v_pi*theta/np.pi
-    mzm_v2=-v_pi*theta/np.pi    
+    mzm_v2=-v_pi*theta/np.pi   
+    
+    if quantization:
+            
+        allowed_dac_volts = np.linspace(-v_pi,v_pi, num=2**dac_precision-1, endpoint=True)
+        bins = allowed_dac_volts + np.abs(allowed_dac_volts[0]-allowed_dac_volts[1])/2
+        
+        mzm_v1_bin_index = np.digitize(mzm_v1,bins)
+        mzm_v2_bin_index = np.digitize(mzm_v2,bins)
+        
+        for i,j in zip(range(0,len(mzm_v1)),mzm_v1_bin_index):
+            mzm_v1[i]=allowed_dac_volts[j]
+            
+        for i,j in zip(range(0,len(mzm_v2)),mzm_v2_bin_index):
+            mzm_v2[i]=allowed_dac_volts[j]
+         
     return mzm_v1, mzm_v2  
+    
 
+
+def adc(sample, ref_volt=adc_ref_volt, adc_precision = adc_bit_precision):
+    allowed_adc_volts = np.linspace(-ref_volt,ref_volt, num=2**adc_precision-1, endpoint=True)
+    bins = allowed_adc_volts + np.abs(allowed_adc_volts[0]-allowed_adc_volts[1])/2
+    quantized_sample_index = np.digitize(sample, bins)
+    quantized_sample = allowed_adc_volts[quantized_sample_index]
+    return quantized_sample
+    
+    
 
 def count_positive_values(arr):
     count = 0
@@ -156,14 +190,14 @@ lumapi.evalScript(h,'''
     
     # the v_pi value
     setnamed("MZM_1", "pi dc voltage", v_pi);
-    setnamed("MZM_1", "bias voltage 1", 0);
-    setnamed("MZM_1", "bias voltage 2", 0);
+    setnamed("MZM_1", "bias voltage 1", -v_pi/2);
+    setnamed("MZM_1", "bias voltage 2", v_pi/2);
     setnamed("MZM_1", "extinction ratio", 1e+13);
     setnamed("MZM_1", "insertion loss", 0);
     
     setnamed("MZM_2", "pi dc voltage", v_pi);
-    setnamed("MZM_2", "bias voltage 1", 0);
-    setnamed("MZM_2", "bias voltage 2", 0);
+    setnamed("MZM_2", "bias voltage 1", -v_pi/2);
+    setnamed("MZM_2", "bias voltage 2", v_pi/2);
     setnamed("MZM_2", "extinction ratio", 1e+13);
     setnamed("MZM_2", "insertion loss", 0);
 
@@ -226,9 +260,9 @@ J_matrix = J_hyperparameters(J,alpha, beta)
 spins = np.zeros(N_spins)
 
 
-spins = spins-np.pi/2 + noise[0]
+spins = spins + noise[0]
 
-result=np.dot(J_matrix, np.cos(spins))
+result=np.dot(J_matrix, np.sin(spins))
 
 J_matrix_normalized, J_matrix_normalization_factor = normalize(J_matrix)
 
@@ -249,10 +283,10 @@ for t in time:
 
     # for resetting the integrator
     if reset_flag:
-        mzm1_v1[counter]=np.arccos(0.0)*v_pi/np.pi
-        mzm1_v2[counter]=-np.arccos(0.0)*v_pi/np.pi        
-        mzm2_v1[counter]=np.arccos(0.0)*v_pi/np.pi
-        mzm2_v2[counter]=-np.arccos(0.0)*v_pi/np.pi
+        mzm1_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
+        mzm1_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi        
+        mzm2_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
+        mzm2_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi
 
         
     else:
@@ -313,7 +347,7 @@ for t in time:
     pd_output[counter] = lumapi.getVar(h,"v_pd")
     integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator # voltage across the capacitor, , no need quantization here
     dot_product_data[counter]=integrator_output[counter]*J_matrix_normalization_factor*c_integrator/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
-
+    # also dot_product data is not really needed....that can be managed with the integrator data itself during sampling
         
     counter=counter+1
     
@@ -324,8 +358,8 @@ for t in time:
         if input_index == len(input_data1):
             reset_flag=1
 
-            integrator_data[integrator_index] = integrator_output[counter-1]
-            dot_product[integrator_index] = dot_product_data[counter-1]
+            integrator_data[integrator_index] = adc(integrator_output[counter-1]) #sampling quantization
+            dot_product[integrator_index] = integrator_data[integrator_index]*J_matrix_normalization_factor*c_integrator/(time_per_input * 0.001) #dot_product_data[counter-1]
             
             integrator_index = integrator_index+1
           
@@ -337,8 +371,13 @@ for t in time:
                 #print(np.array(dot_product))
                 #spin_evolution[iteration_counter]=np.array(dot_product)
                 
-                spins = dot_product -np.pi/2 + noise[iteration_counter]
-                spin_evolution[iteration_counter]=np.cos(np.array(spins))
+                spins = dot_product + noise[iteration_counter]
+                spins[spins>np.arcsin(norm_limiter)]=np.arcsin(norm_limiter)
+                spins[spins<-np.arcsin(norm_limiter)]=-np.arcsin(norm_limiter)
+                # the reason final bundle is much thinner here because of the set value, and in the notmal execution even when there is a overshoot, the valuestays <1 and noisy
+                # basically in normal execution when limiter=1, the spins which are less than the bound [-1,1], are OVERSHOOTS.
+                # point is, the the thinner bundle is as expected and nothing out of ordinary
+                spin_evolution[iteration_counter]=np.sin(np.array(spins))
                 print(spin_evolution[iteration_counter])
                 hamiltonian_evolution[iteration_counter] = hamiltonian(spin_evolution[iteration_counter], J)
                 print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")

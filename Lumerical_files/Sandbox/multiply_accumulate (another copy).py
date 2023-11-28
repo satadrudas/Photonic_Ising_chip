@@ -23,11 +23,11 @@ vector_size = 100
 #input_data1=np.array([0.0, 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0, 0.0])
 #input_data2=np.array([ 1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0])
 
-#input_data1=np.array([ 1.0,1.0, -1.0, -1.0])
-#input_data2=np.array([ 1.0,-1.0, 1.0, -1.0])
+input_data1=np.array([ 1.0,1.0, -1.0, -1.0, 0.0])
+input_data2=np.array([ 1.0,1.0, 1.0, -1.0, 0.0])
 
-input_data1=np.random.uniform(-1,1,vector_size)#np.array([0.1,0.2, 0.3, 0.5, 0.7,0.8, 0.9 ])
-input_data2=np.random.uniform(-1,1,vector_size)#np.array([0.1,0.2, 0.3, 0.5, 0.7,0.8, 0.9 ])
+#input_data1=np.random.uniform(-1,1,vector_size)#np.array([0.1,0.2, 0.3, 0.5, 0.7,0.8, 0.9 ])
+#input_data2=np.random.uniform(-1,1,vector_size)#np.array([0.1,0.2, 0.3, 0.5, 0.7,0.8, 0.9 ])
 #input_data2=np.ones(vector_size)
 
 
@@ -43,7 +43,8 @@ result=np.dot(input_data1, input_data2)
 #input_data1 = np.square(input_data1)
 
 v_pi= 4 
-mzm_freq=1e9
+c_integrator= 100e-12 #farad
+mzm_freq=10e9
 time_per_input=1/mzm_freq
 samples_per_input = 10
 time_per_sample=time_per_input / samples_per_input
@@ -210,8 +211,8 @@ for t in time:
 
 
     pd_output[counter] = lumapi.getVar(h,"v_pd")
-    integrator_output[counter] = lumapi.getVar(h,"v_integrator")
-    dot_product_data[counter]=integrator_output[counter]/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
+    integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator
+    dot_product_data[counter]=integrator_output[counter]*c_integrator/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
 
         
     counter=counter+1

@@ -20,8 +20,9 @@ alpha = 0.4
 beta=0.5
 
 c_integrator=100e-12 # Farad
+norm_limiter = 0.7 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
 v_pi= 4
-mzm_freq=1e9
+mzm_freq=10e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
@@ -54,8 +55,8 @@ def square_lattice_coupling_matrix_generator(n):
 
     return j
 
-def normalize(input):
-    normalizing_factor = np.max(np.abs(input))
+def normalize(input, limiter=norm_limiter):
+    normalizing_factor = np.max(np.abs(input))/limiter
     normalized_input = input/normalizing_factor
     return normalized_input, normalizing_factor
     
@@ -225,12 +226,14 @@ J_matrix = J_hyperparameters(J,alpha, beta)
 
 spins = np.zeros(N_spins)
 
+sig = 0.05
 
 spins = spins-np.pi/2 + noise[0]
 
 result=np.dot(J_matrix, np.cos(spins))
 
 J_matrix_normalized, J_matrix_normalization_factor = normalize(J_matrix)
+print(J_matrix_normalized)
 
 input_data1_normalized=J_matrix_normalized[integrator_index]
 #spins_normalized, spins_normalization_factor = normalize(spins)
@@ -311,7 +314,7 @@ for t in time:
 
 
     pd_output[counter] = lumapi.getVar(h,"v_pd")
-    integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator # voltage across the capacitor, , no need quantization here
+    integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator # voltage across the capacitor, no need quantization here
     dot_product_data[counter]=integrator_output[counter]*J_matrix_normalization_factor*c_integrator/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
 
         
@@ -336,18 +339,26 @@ for t in time:
                 
                 #print(np.array(dot_product))
                 #spin_evolution[iteration_counter]=np.array(dot_product)
-                
+                  
                 spins = dot_product -np.pi/2 + noise[iteration_counter]
+                print('spins'+str(spins)+'\n')
+                #print('dot_product'+str(dot_product)+'\n')
+                
+                spins[spins>-(np.pi/2)+np.arcsin(norm_limiter)]=-(np.pi/2)+np.arcsin(norm_limiter)
+                spins[spins<-(np.pi/2)-np.arcsin(norm_limiter)]=-(np.pi/2)-np.arcsin(norm_limiter)
+                # the reason final bundle is much thinner here because of the set value, and in the notmal execution even when there is a overshoot, the valuestays <1 and noisy
+                # basically in normal execution when limiter=1, the spins which are less than the bound [-1,1], are OVERSHOOTS.
+                # point is, the the thinner bundle is as expected and nothing out of ordinary
                 spin_evolution[iteration_counter]=np.cos(np.array(spins))
                 print(spin_evolution[iteration_counter])
                 hamiltonian_evolution[iteration_counter] = hamiltonian(spin_evolution[iteration_counter], J)
-                print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")
+                #print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")
 
                 spins = vvm_preprocess(spins)# actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
+               
                 mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
-
-    
-                       
+                
+        
    
             #input_index=0
         if input_index == len(input_data1)+1:

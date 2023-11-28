@@ -25,7 +25,9 @@ result=np.sum(input_data)
 input_data = np.sqrt(input_data)
 
 v_pi= 4 
-mzm_freq=1e9
+c_integrator=100e-12 # Farad
+
+mzm_freq=10e9
 time_per_input=1/mzm_freq
 samples_per_input = 5
 time_per_sample=time_per_input / samples_per_input
@@ -160,8 +162,8 @@ for t in time:
     ''')
 
     pd_output[counter] = lumapi.getVar(h,"v_pd")
-    integrator_output[counter] = lumapi.getVar(h,"v_integrator")
-    dot_product_data[counter]=integrator_output[counter]/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
+    integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator
+    dot_product_data[counter]=integrator_output[counter]*c_integrator/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
         
     counter=counter+1
     
