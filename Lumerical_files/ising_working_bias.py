@@ -28,7 +28,7 @@ time_per_sample=time_per_input / samples_per_input
 N_iterations=20
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
-sig = 0.1
+sig = 0.05
 
 integrator_data = np.zeros(N_spins)
 dot_product = np.zeros(N_spins)
@@ -73,12 +73,12 @@ def mzm_voltages(input, theta_flag=0):
     dual drive MZM for the given input
     
     If theta_flag is set, then the theta will be set 
-    to the input and no arccos will be taken
+    to the input and no arcsin will be taken
     '''
     if theta_flag:
         theta=input
     else:
-        theta=np.arccos(input)
+        theta=np.arcsin(input)
         
     mzm_v1=v_pi*theta/np.pi
     mzm_v2=-v_pi*theta/np.pi    
@@ -156,14 +156,14 @@ lumapi.evalScript(h,'''
     
     # the v_pi value
     setnamed("MZM_1", "pi dc voltage", v_pi);
-    setnamed("MZM_1", "bias voltage 1", 0);
-    setnamed("MZM_1", "bias voltage 2", 0);
+    setnamed("MZM_1", "bias voltage 1", -v_pi/2);
+    setnamed("MZM_1", "bias voltage 2", v_pi/2);
     setnamed("MZM_1", "extinction ratio", 1e+13);
     setnamed("MZM_1", "insertion loss", 0);
     
     setnamed("MZM_2", "pi dc voltage", v_pi);
-    setnamed("MZM_2", "bias voltage 1", 0);
-    setnamed("MZM_2", "bias voltage 2", 0);
+    setnamed("MZM_2", "bias voltage 1", -v_pi/2);
+    setnamed("MZM_2", "bias voltage 2", v_pi/2);
     setnamed("MZM_2", "extinction ratio", 1e+13);
     setnamed("MZM_2", "insertion loss", 0);
 
@@ -226,9 +226,9 @@ J_matrix = J_hyperparameters(J,alpha, beta)
 spins = np.zeros(N_spins)
 
 
-spins = spins-np.pi/2 + noise[0]
+spins = spins + noise[0]
 
-result=np.dot(J_matrix, np.cos(spins))
+result=np.dot(J_matrix, np.sin(spins))
 
 J_matrix_normalized, J_matrix_normalization_factor = normalize(J_matrix)
 
@@ -249,10 +249,10 @@ for t in time:
 
     # for resetting the integrator
     if reset_flag:
-        mzm1_v1[counter]=np.arccos(0.0)*v_pi/np.pi
-        mzm1_v2[counter]=-np.arccos(0.0)*v_pi/np.pi        
-        mzm2_v1[counter]=np.arccos(0.0)*v_pi/np.pi
-        mzm2_v2[counter]=-np.arccos(0.0)*v_pi/np.pi
+        mzm1_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
+        mzm1_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi        
+        mzm2_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
+        mzm2_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi
 
         
     else:
@@ -337,8 +337,8 @@ for t in time:
                 #print(np.array(dot_product))
                 #spin_evolution[iteration_counter]=np.array(dot_product)
                 
-                spins = dot_product -np.pi/2 + noise[iteration_counter]
-                spin_evolution[iteration_counter]=np.cos(np.array(spins))
+                spins = dot_product + noise[iteration_counter]
+                spin_evolution[iteration_counter]=np.sin(np.array(spins))
                 print(spin_evolution[iteration_counter])
                 hamiltonian_evolution[iteration_counter] = hamiltonian(spin_evolution[iteration_counter], J)
                 print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")

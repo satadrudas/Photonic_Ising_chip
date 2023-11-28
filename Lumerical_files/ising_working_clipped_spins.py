@@ -19,9 +19,10 @@ N_spins = 16
 alpha = 0.4
 beta=0.5
 
-norm_limiter = 1.0 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
+c_integrator=100e-12 # Farad
+norm_limiter = 0.7 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
 v_pi= 4
-mzm_freq=1e9
+mzm_freq=10e9
 time_per_input=1/mzm_freq
 samples_per_input = 3
 time_per_sample=time_per_input / samples_per_input
@@ -313,8 +314,8 @@ for t in time:
 
 
     pd_output[counter] = lumapi.getVar(h,"v_pd")
-    integrator_output[counter] = lumapi.getVar(h,"v_integrator")*J_matrix_normalization_factor#*spins_normalization_factor
-    dot_product_data[counter]=integrator_output[counter]/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
+    integrator_output[counter] = lumapi.getVar(h,"v_integrator")/c_integrator # voltage across the capacitor, no need quantization here
+    dot_product_data[counter]=integrator_output[counter]*J_matrix_normalization_factor*c_integrator/(time_per_input * 0.001)# the 0.001 is to factor out the milliwatt to 1
 
         
     counter=counter+1
