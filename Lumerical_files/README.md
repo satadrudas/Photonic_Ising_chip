@@ -4,7 +4,10 @@ The circuit is driven by a Lumerical INTERCONNECT python co-simulation module.
 
 ![alt text](Ising.png)
 
-The cosine operation was done in python for visualization purpose, since the value recorded by the co-sim module id the dotproduct and not the spin value. <br/><br/>
+The cosine operation was done in python for visualization purpose, since the value recorded by the co-sim module id the dotproduct and not the spin value. <br/>
+
+NOTE: There are 2 ways of encoding the J_ij elements. Either we take the inverser cosine right at the begining of the run which wouls be done only once since J_ij stays fixed for an optimization, and then implement the computation. Or we can completely avoid the inverse cosine operation by modulating the amplitude only in the linear region of the cosine, but there would be heavy loss, approx around 50% (check the cosine and cosine squared graph).<br/><br/>
+
 The following results for uncoupled spins were simulated with alpha = 1.5. <br/>
 ![alt text](uncoupled_spins_evolution.png)
 ![alt text](final_spins.png)
