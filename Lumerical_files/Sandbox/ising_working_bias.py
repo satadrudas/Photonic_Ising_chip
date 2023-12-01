@@ -1,5 +1,7 @@
 import sys, os, random, pdb
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 ## Uncomment the following if you are using Linux
 sys.path.append("/opt/lumerical/v232/python/bin/python3") # linux
@@ -453,6 +455,12 @@ plot(x,hamiltonian_evolution,"Iterations", "Ising Energy", "Ising Energy", "plot
 legend("Ising Energy");
 
 ''')
+
+
+# plotting the spin evoluting...WORKS
+#x=np.linspace(0,N_iterations, N_iterations+1)
+#plt.plot(x,spin_evolution)
+#plt.show()
 
 pdb.set_trace()
 
