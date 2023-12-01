@@ -1,5 +1,6 @@
 import sys, os, random, pdb
 import numpy as np
+import matplotlib.pyplot as plt
 
 ## Uncomment the following if you are using Linux
 sys.path.append("/opt/lumerical/v232/python/bin/python3") # linux
@@ -19,12 +20,6 @@ N_spins = 16
 alpha = 0.4
 beta=0.5
 
-dac_bit_precision=8
-adc_bit_precision=16
-adc_ref_volt=1 # determined by have a max value of otleast 0.001*(time_per_input/c_integrator)*N_spins
-c_integrator=100e-12 # Farad
-norm_limiter = 0.4 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
-
 
 v_pi= 4
 mzm_freq=10e9
@@ -35,6 +30,14 @@ N_iterations=20
 N_samples = N_iterations*(N_spins+2)*N_spins *(samples_per_input) #+2 because 1 for the integrating part and 1 for the extra 0 we add during reprocessing
 time_window = N_samples * time_per_sample
 sig = 0.1
+
+dac_bit_precision=8
+dac_v_max=v_pi
+adc_bit_precision=16
+adc_ref_volt=1 # determined by have a max value of otleast 0.001*(time_per_input/c_integrator)*N_spins
+c_integrator=100e-12 # Farad
+norm_limiter = 0.5 # to set the mzm in range [-norm_limiter,norm_limiter] to avoid high swing of the driver
+
 
 integrator_data = np.zeros(N_spins)
 dot_product = np.zeros(N_spins)
@@ -73,7 +76,7 @@ def vvm_preprocess(input, insert_value=0.0):
     input=np.insert(input, len(input), insert_value)    
     return input
     
-def mzm_voltages(input, theta_flag=0, quantization=1, dac_precision=dac_bit_precision):
+def mzm_voltages(input, quantization=1, dac_precision=dac_bit_precision):
     '''
     Returns the neccessary voltages of a
     dual drive MZM for the given input
@@ -84,13 +87,10 @@ def mzm_voltages(input, theta_flag=0, quantization=1, dac_precision=dac_bit_prec
     quantization flag is set for dac precision
     '''
     
-    if theta_flag:
-        theta=input
-    else:
-        theta=np.arcsin(input)
+
         
-    mzm_v1=v_pi*theta/np.pi
-    mzm_v2=-v_pi*theta/np.pi   
+    mzm_v1=v_pi*input/np.pi
+    mzm_v2=-v_pi*input/np.pi   
     
     if quantization:
             
@@ -272,8 +272,8 @@ input_data1_normalized=J_matrix_normalized[integrator_index]
 input_data1 = vvm_preprocess(input_data1_normalized, 0.0)
 spins = vvm_preprocess(spins, 0.0) # actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
    
-mzm1_input1,mzm1_input2 = mzm_voltages(input_data1, 0)
-mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
+mzm1_input1,mzm1_input2 = mzm_voltages(input_data1)
+mzm2_input1,mzm2_input2 = mzm_voltages(spins)
 
 
 
@@ -283,10 +283,10 @@ for t in time:
 
     # for resetting the integrator
     if reset_flag:
-        mzm1_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
-        mzm1_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi        
-        mzm2_v1[counter]=np.arcsin(0.0)*v_pi/np.pi
-        mzm2_v2[counter]=-np.arcsin(0.0)*v_pi/np.pi
+        mzm1_v1[counter]=0.0
+        mzm1_v2[counter]=0.0       
+        mzm2_v1[counter]=0.0
+        mzm2_v2[counter]=0.0
 
         
     else:
@@ -383,7 +383,7 @@ for t in time:
                 print("current hamiltonian: "+str(hamiltonian_evolution[iteration_counter])+"\n\n")
 
                 spins = vvm_preprocess(spins)# actually it doenst matter what vlue you put for the preprocessor cuz, the J already has a 0.0, so the product is anyway going to be 0
-                mzm2_input1,mzm2_input2 = mzm_voltages(spins, 1)
+                mzm2_input1,mzm2_input2 = mzm_voltages(spins)
 
     
                        
@@ -492,6 +492,11 @@ plot(x,hamiltonian_evolution,"Iterations", "Ising Energy", "Ising Energy", "plot
 legend("Ising Energy");
 
 ''')
+
+# plotting the spin evoluting...WORKS
+#x=np.linspace(0,N_iterations, N_iterations+1)
+#plt.plot(x,spin_evolution)
+#plt.show()
 
 pdb.set_trace()
 
