@@ -496,6 +496,11 @@ legend("Ising Energy");
 #plt.plot(x,spin_evolution)
 #plt.show()
 
+# for square lattice you can also visualize the checkered board pattern
+plt.matshow(final_spins_value.reshape(int(np.sqrt(N_spins)), int(np.sqrt(N_spins))))
+plt.colorbar()
+plt.show()
+
 pdb.set_trace()
 
 lumapi.close(h)
