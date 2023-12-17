@@ -1,4 +1,6 @@
-I used Lumerical INTERCONNECT to do some preliminary simulations.
+I used Lumerical INTERCONNECT to do some preliminary simulations.<br/>
+
+For linear drivers, check the [desmos graph](https://www.desmos.com/calculator/af8jm82iia)
 
 The circuit is driven by a Lumerical INTERCONNECT python co-simulation module.
 
