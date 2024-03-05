@@ -33,3 +33,4 @@ There are 2 wars to encode the spins.
 1. [Alexander Sludds et al. ,Delocalized photonic deep learning on the internet’s edge.Science378,270-276(2022).DOI:10.1126/science.abq8271](https://www.science.org/doi/10.1126/science.abq8271)
 1. [L. De Marinis et al., "A Codesigned Integrated Photonic Electronic Neuron," in IEEE Journal of Quantum Electronics, vol. 58, no. 5, pp. 1-10, Oct. 2022, Art no. 8100210, doi: 10.1109/JQE.2022.3177793.](https://ieeexplore.ieee.org/document/9781309)<br/>
 1. [DOTA: A Dynamically-Operated Photonic Tensor Core for Energy-Efficient Transformer Accelerator](https://arxiv.org/abs/2305.19533)<br/>
+1. [N. Youngblood, "Coherent Photonic Crossbar Arrays for Large-Scale Matrix-Matrix Multiplication," in IEEE Journal of Selected Topics in Quantum Electronics, vol. 29, no. 2: Optical Computing, pp. 1-11, March-April 2023, Art no. 6100211, doi: 10.1109/JSTQE.2022.3171167. ](https://ieeexplore.ieee.org/document/9765351)<br/>
