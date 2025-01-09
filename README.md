@@ -6,6 +6,7 @@ A time-multiplexed Coherent Ising Machine chip is designed based of Silicon Phot
 
 
 The PIC in simulated in Lumerical INTERCONNECT.
+![alt text](Ising.png)
 
 
 ## Device Schematic
